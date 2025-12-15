@@ -782,19 +782,30 @@ function debounce(func, wait) {
     };
 }
 
-// PWA Installation
+
+
 let deferredPrompt;
+const installBtn = document.getElementById('installBtn');
+
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    // Show install button
-    showInstallPrompt();
+    installBtn.hidden = false;
 });
 
-function showInstallPrompt() {
-    // Implement install prompt UI
-    showToast('يمكن تثبيت التطبيق على جهازك', 'info');
-}
+installBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+
+    if (outcome === 'accepted') {
+        showToast('تم تثبيت التطبيق 🎉', 'success');
+    }
+
+    deferredPrompt = null;
+    installBtn.hidden = true;
+});
 
 // Export functions for global access
 window.showPage = showPage;

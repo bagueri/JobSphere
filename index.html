@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+     <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2196F3">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Job search</title>
@@ -36,6 +39,12 @@
             <div class="nav-logo">
                 <i class="fas fa-briefcase"></i>
                 <span>Job available</span>
+                    <!-- زر التثبيت -->
+    <button id="installBtn" class="install-btn" title="تثبيت التطبيق">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M12 16l4-5h-3V4h-2v7H8l4 5zm8 4H4v-2h16v2z"/>
+        </svg>
+    </button>
             </div>
             <div class="nav-menu" id="nav-menu">
                 <a href="#" class="nav-link" onclick="showPage('home')">
