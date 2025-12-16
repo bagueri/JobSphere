@@ -1,542 +1,437 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-     <!-- PWA -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#2196F3">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Job search</title>
+    <meta name="description" content="موقع البحث عن الوظائف ونشرها - منصة شاملة للوظائف">
+    <meta name="theme-color" content="#1976d2">
     
     <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#2196F3">
-    <meta name="description" content="موقع البحث عن الوظائف ونشر الوظائف">
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="الوظائف">
     
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getDatabase, ref, push, set, get, query, orderByChild, equalTo } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        window.firebaseConfig = {
+            apiKey: "AIzaSyAGq9x3zOZXfqEZ3tMFRuUUTHnuHKNTRgI",
+            authDomain: "pixelbuilder2-auth.firebaseapp.com",
+            databaseURL: "https://pixelbuilder2-auth-default-rtdb.firebaseio.com",
+            projectId: "pixelbuilder2-auth",
+            storageBucket: "pixelbuilder2-auth.firebasestorage.app",
+            messagingSenderId: "296299154171",
+            appId: "1:296299154171:web:a4a68db29625b2d902fe5e",
+            measurementId: "G-GGPBBJ2FYP"
+        };
+    </script>
     
-    <!-- CSS -->
+    <title>الوظائف - منصة البحث عن الوظائف</title>
     <link rel="stylesheet" href="style.css">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <!-- Loading Screen -->
-    <div id="loading" class="loading-screen">
+    <div id="loading-screen" class="loading-screen">
         <div class="loading-spinner"></div>
         <p>جاري التحميل...</p>
     </div>
 
-    <!-- Navigation -->
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="nav-logo">
-                <i class="fas fa-briefcase"></i>
-                <span>Job available</span>
-                    <!-- زر التثبيت -->
-    <button id="installBtn" class="install-btn" title="تثبيت التطبيق">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-            <path d="M12 16l4-5h-3V4h-2v7H8l4 5zm8 4H4v-2h16v2z"/>
-        </svg>
-    </button>
+    <!-- Install Banner -->
+    <div id="install-banner" class="install-banner hidden">
+        <div class="install-content">
+            <i class="fas fa-mobile-alt"></i>
+            <div class="install-text">
+                <h3>تثبيت التطبيق</h3>
+                <p>احصل على تجربة أفضل بتثبيت التطبيق على جهازك</p>
             </div>
-            <div class="nav-menu" id="nav-menu">
-                <a href="#" class="nav-link" onclick="showPage('home')">
-                    <i class="fas fa-home"></i> الرئيسية
-                </a>
-                <a href="#" class="nav-link" onclick="showPage('jobs')">
-                    <i class="fas fa-search"></i> ابحث عن وظيفة
-                </a>
-                <a href="#" class="nav-link" onclick="showPage('post-job')" id="post-job-link" style="display: none;">
-                    <i class="fas fa-plus"></i> نشر وظيفة
-                </a>
-                <a href="#" class="nav-link" onclick="showPage('profile')" id="profile-link" style="display: none;">
-                    <i class="fas fa-user"></i> الملف الشخصي
-                </a>
-                <a href="#" class="nav-link" onclick="showLogin()" id="login-link">
-                    <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
-                </a>
-            </div>
-            <div class="hamburger" id="hamburger">
-                <span></span>
-                <span></span>
-                <span></span>
+            <div class="install-buttons">
+                <button id="install-btn" class="btn-install">تثبيت</button>
+                <button id="dismiss-btn" class="btn-dismiss">لاحقاً</button>
             </div>
         </div>
-    </nav>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <nav class="navbar">
+            <div class="nav-brand">
+                <i class="fas fa-briefcase"></i>
+                <h1>الوظائف</h1>
+            </div>
+            
+            <div class="nav-menu" id="nav-menu">
+                <a href="#home" class="nav-link active">الرئيسية</a>
+                <a href="#search" class="nav-link">البحث</a>
+                <a href="#post-job" class="nav-link">نشر وظيفة</a>
+                <a href="#profile" class="nav-link">الملف الشخصي</a>
+                <a href="install.html" class="nav-link">تثبيت التطبيق</a>
+            </div>
+            
+            <div class="nav-auth">
+                <button id="login-btn" class="btn btn-outline">تسجيل الدخول</button>
+                <button id="logout-btn" class="btn btn-primary hidden">تسجيل الخروج</button>
+                <div id="user-menu" class="user-menu hidden">
+                    <img id="user-avatar" class="user-avatar" src="" alt="User">
+                    <span id="user-name" class="user-name"></span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </div>
+            
+            <div class="nav-toggle" id="nav-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </nav>
+    </header>
 
     <!-- Main Content -->
-    <main class="main-content">
-        <!-- Home Page -->
-        <section id="home-page" class="page active">
-            <div class="hero-section">
-                <div class="hero-content">
-                    <h1>ابحث عن وظيفة تناسبك</h1>
-                    <p>هنا توجد وظائف تناسب لمرهراتك القوية ابحث الان قد تجدها</p>
-                    <div class="hero-buttons">
-                        <button class="btn btn-primary" onclick="showPage('jobs')">
-                            <i class="fas fa-search"></i> ابحث الآن
-                        </button>
-                        <button class="btn btn-secondary" onclick="showPage('post-job')">
-                            <i class="fas fa-plus"></i> نشر وظيفة
-                        </button>
-                    </div>
-                </div>
-                <div class="hero-stats">
-                    <div class="stat-item">
-                        <h3>500+</h3>
-                        <p>وظيفة متاحة</p>
-                    </div>
-                    <div class="stat-item">
-                        <h3>305+</h3>
-                        <p>شركة رائدة</p>
-                    </div>
-                    <div class="stat-item">
-                        <h3>20.000+</h3>
-                        <p>مرشح ناجح</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="features-section">
-                <h2>لمادا الجميع يختار موقعنا ?</h2>
-                <div class="features-grid">
-                    <div class="feature-card">
-                        <i class="fas fa-search"></i>
-                        <h3>بحث متقدم</h3>
-                        <p>البحث عن وظائف تناسب حسب مهاراتك </p>
-                    </div>
-                    <div class="feature-card">
-                        <i class="fas fa-mobile-alt"></i>
-                        <h3>سهولة الاستخدام</h3>
-                        <p>واجهة بسيطة وسهلة الاستخدام على جميع الأجهزة</p>
-                    </div>
-                    <div class="feature-card">
-                        <i class="fas fa-shield-alt"></i>
-                        <h3>آمان وموثوقية</h3>
-                        <p>بيانات المستخدم محمية من طرف firebass</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Jobs Search Page -->
-        <section id="jobs-page" class="page">
-            <div class="page-header">
-                <h1>ابحث عن الوظائف</h1>
-                <p>اعثر على الوظيفة المناسبة لك</p>
-            </div>
-
-            <div class="search-section">
+    <main class="main">
+        <!-- Hero Section -->
+        <section id="home" class="hero">
+            <div class="hero-content">
+                <h2>اعثر على الوظيفة المثالية</h2>
+                <p>منصة شاملة للبحث عن أفضل الوظائف ونشر الوظائف المتاحة</p>
+                
                 <div class="search-box">
-                    <input type="text" id="search-input" placeholder="ابحث عن وظيفة أو شركة...">
-                    <button class="search-btn" onclick="searchJobs()">
+                    <div class="search-inputs">
+                        <div class="search-group">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="job-search" placeholder="ابحث عن وظيفة...">
+                        </div>
+                        <div class="search-group">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <input type="text" id="location-search" placeholder="المدينة أو المنطقة">
+                        </div>
+                    </div>
+                    <button id="search-btn" class="btn btn-primary btn-large">
                         <i class="fas fa-search"></i>
+                        بحث
                     </button>
                 </div>
                 
-                <div class="filters">
-                    <select id="category-filter">
-                        <option value="">جميع المجالات</option>
-                        <option value="technology">التكنولوجيا</option>
-                        <option value="marketing">التسويق</option>
-                        <option value="sales">المبيعات</option>
-                        <option value="finance">المالية</option>
-                        <option value="hr">الموارد البشرية</option>
-                        <option value="education">التعليم</option>
-                        <option value="health">الصحة</option>
-                        <option value="engineering">الهندسة</option>
-                    </select>
-                    
-                    <select id="experience-filter">
-                        <option value="">جميع مستويات الخبرة</option>
-                        <option value="entry">مبتدئ (0-2 سنة)</option>
-                        <option value="mid">متوسط (2-5 سنوات)</option>
-                        <option value="senior">خبير (5+ سنوات)</option>
-                    </select>
-                    
-                    <select id="location-filter">
-                                <option value="">جميع المواقع</option>
-                            <option value="riyadh">ورزازات</option>
-                        <option value="jeddah">ميدلت</option>
-                    <option value="dammam">الريش</option>
-                <option value="makkah">وجدة</option>
-            <option value="madinah">تنغير</option>
-        <option value="remote">الجديدة </option>
-    <option value="remote">الرباط</option>
- <option value="remote">طنجة</option>
- <option value="remote">سلا</option>
- <option value="remote">تطوان</option>
- <option value="remote">الرشيدية</option>
-<option value="casablanca">الدار البيضاء</option>
-<option value="marrakech">مراكش</option>
-<option value="fes">فاس</option>
-<option value="meknes">مكناس</option>
-<option value="agadir">أكادير</option>
-<option value="kenitra">القنيطرة</option>
-<option value="temara">تمارة</option>
-<option value="mohammedia">المحمدية</option>
-<option value="safi">آسفي</option>
-<option value="el-jadida">أزمور</option>
-<option value="khouribga">خريبكة</option>
-<option value="beni-mellal">بني ملال</option>
-<option value="settat">سطات</option>
-<option value="berrechid">برشيد</option>
-<option value="ouazzane">وزان</option>
-<option value="chefchaouen">شفشاون</option>
-<option value="larache">العرائش</option>
-<option value="asilah">أصيلة</option>
-<option value="taza">تازة</option>
-<option value="taounate">تاونات</option>
-<option value="nador">الناظور</option>
-<option value="driouch">الدريوش</option>
-<option value="al-hoceima">الحسيمة</option>
-<option value="guercif">جرسيف</option>
-<option value="taourirt">تاوريرت</option>
-<option value="sidi-kacem">سيدي قاسم</option>
-<option value="sidi-slimane">سيدي سليمان</option>
-<option value="khemisset">الخميسات</option>
-<option value="ifrane">إفران</option>
-<option value="azrou">آزرو</option>
-<option value="errachidia">أرفود</option>
-<option value="tinghir">قلعة مكونة</option>
-<option value="zagora">زاكورة</option>
-<option value="taroudant">تارودانت</option>
-<option value="tiznit">تزنيت</option>
-<option value="guelmim">كلميم</option>
-<option value="tan-tan">طانطان</option>
-<option value="tarfaya">طرفاية</option>
-<option value="laayoune">العيون</option>
-<option value="boujdour">بوجدور</option>
-<option value="dakhla">الداخلة</option>
-<option value="smara">السمارة</option>
-<option value="midar">ميدار</option>
-<option value="ahfir">أحفير</option>
-<option value="jerada">جرادة</option>
-<option value="zouagha">زواغة</option>
-
-
-                    </select>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <span class="stat-number" id="total-jobs">0</span>
+                        <span class="stat-label">وظيفة متاحة</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number" id="total-companies">0</span>
+                        <span class="stat-label">شركة مسجلة</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number" id="total-users">0</span>
+                        <span class="stat-label">مستخدم</span>
+                    </div>
                 </div>
-            </div>
-
-            <div class="jobs-list" id="jobs-list">
-                <!-- Jobs will be loaded here -->
-            </div>
-
-            <div class="load-more">
-                <button class="btn btn-primary" onclick="loadMoreJobs()">تحميل المزيد</button>
             </div>
         </section>
 
-        <!-- Post Job Page -->
-        <section id="post-job-page" class="page">
-            <div class="page-header">
-                <h1>نشر وظيفة جديدة</h1>
-                <p>شارك فرصتك الوظيفية مع أفضل المواهب</p>
-            </div>
-
-            <form class="job-form" id="job-form">
-                <div class="form-group">
-                    <label for="job-title">عنوان الوظيفة *</label>
-                    <input type="text" id="job-title" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="company-name">اسم الشركة *</label>
-                    <input type="text" id="company-name" required>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="job-category">المجال *</label>
-                        <select id="job-category" required>
-                            <option value="">اختر المجال</option>
-                            <option value="technology">التكنولوجيا</option>
+        <!-- Search Results Section -->
+        <section id="search-section" class="search-section hidden">
+            <div class="container">
+                <div class="filters">
+                    <h3>تصفية النتائج</h3>
+                    <div class="filter-row">
+                        <select id="category-filter">
+                            <option value="">جميع التخصصات</option>
+                            <option value="it">تقنية المعلومات</option>
                             <option value="marketing">التسويق</option>
                             <option value="sales">المبيعات</option>
-                            <option value="finance">المالية</option>
                             <option value="hr">الموارد البشرية</option>
-                            <option value="education">التعليم</option>
-                            <option value="health">الصحة</option>
+                            <option value="finance">المالية</option>
                             <option value="engineering">الهندسة</option>
+                            <option value="design">التصميم</option>
+                            <option value="education">التعليم</option>
+                        </select>
+                        
+                        <select id="experience-filter">
+                            <option value="">جميع مستويات الخبرة</option>
+                            <option value="junior">مبتدئ</option>
+                            <option value="mid">متوسط</option>
+                            <option value="senior">خبير</option>
+                            <option value="lead">كبير</option>
+                        </select>
+                        
+                        <select id="salary-filter">
+                            <option value="">جميع الرواتب</option>
+                            <option value="0-3000">أقل من 3000 ريال</option>
+                            <option value="3000-5000">3000 - 5000 ريال</option>
+                            <option value="5000-8000">5000 - 8000 ريال</option>
+                            <option value="8000-12000">8000 - 12000 ريال</option>
+                            <option value="12000+">أكثر من 12000 ريال</option>
                         </select>
                     </div>
-
-                    <div class="form-group">
-                        <label for="job-type">نوع العمل *</label>
-                        <select id="job-type" required>
-                            <option value="">اختر نوع العمل</option>
-                            <option value="full-time">دوام كامل</option>
-                            <option value="part-time">دوام جزئي</option>
-                            <option value="contract">عقد</option>
-                            <option value="internship">تدريب</option>
-                        </select>
-                    </div>
                 </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="experience-level">مستوى الخبرة *</label>
-                        <select id="experience-level" required>
-                            <option value="">اختر مستوى الخبرة</option>
-                            <option value="entry">مبتدئ (0-2 سنة)</option>
-                            <option value="mid">متوسط (2-5 سنوات)</option>
-                            <option value="senior">خبير (5+ سنوات)</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="job-location">الموقع *</label>
-                        <select id="job-location" required>
-                            <option value="">اختر الموقع</option>
-                                        <option value="riyadh">ورزازات</option>
-                        <option value="jeddah">ميدلت</option>
-                    <option value="dammam">الريش</option>
-                <option value="makkah">وجدة</option>
-            <option value="madinah">تنغير</option>
-        <option value="remote">الجديدة </option>
-    <option value="remote">الرباط</option>
- <option value="remote">طنجة</option>
- <option value="remote">سلا</option>
- <option value="remote">تطوان</option>
- <option value="remote">الرشيدية</option>
-<option value="casablanca">الدار البيضاء</option>
-<option value="marrakech">مراكش</option>
-<option value="fes">فاس</option>
-<option value="meknes">مكناس</option>
-<option value="agadir">أكادير</option>
-<option value="kenitra">القنيطرة</option>
-<option value="temara">تمارة</option>
-<option value="mohammedia">المحمدية</option>
-<option value="safi">آسفي</option>
-<option value="el-jadida">أزمور</option>
-<option value="khouribga">خريبكة</option>
-<option value="beni-mellal">بني ملال</option>
-<option value="settat">سطات</option>
-<option value="berrechid">برشيد</option>
-<option value="ouazzane">وزان</option>
-<option value="chefchaouen">شفشاون</option>
-<option value="larache">العرائش</option>
-<option value="asilah">أصيلة</option>
-<option value="taza">تازة</option>
-<option value="taounate">تاونات</option>
-<option value="nador">الناظور</option>
-<option value="driouch">الدريوش</option>
-<option value="al-hoceima">الحسيمة</option>
-<option value="guercif">جرسيف</option>
-<option value="taourirt">تاوريرت</option>
-<option value="sidi-kacem">سيدي قاسم</option>
-<option value="sidi-slimane">سيدي سليمان</option>
-<option value="khemisset">الخميسات</option>
-<option value="ifrane">إفران</option>
-<option value="azrou">آزرو</option>
-<option value="errachidia">أرفود</option>
-<option value="tinghir">قلعة مكونة</option>
-<option value="zagora">زاكورة</option>
-<option value="taroudant">تارودانت</option>
-<option value="tiznit">تزنيت</option>
-<option value="guelmim">كلميم</option>
-<option value="tan-tan">طانطان</option>
-<option value="tarfaya">طرفاية</option>
-<option value="laayoune">العيون</option>
-<option value="boujdour">بوجدور</option>
-<option value="dakhla">الداخلة</option>
-<option value="smara">السمارة</option>
-<option value="midar">ميدار</option>
-<option value="ahfir">أحفير</option>
-<option value="jerada">جرادة</option>
-<option value="zouagha">زواغة</option>
-
-                    </div>
+                
+                <div id="jobs-container" class="jobs-container">
+                    <!-- Jobs will be loaded here -->
                 </div>
-
-                <div class="form-group">
-                    <label for="salary-range">الراتب المتوقع</label>
-                    <input type="text" id="salary-range" placeholder="مثال: 8000 - 12000 ريال">
+                
+                <div id="load-more-container" class="load-more-container hidden">
+                    <button id="load-more-btn" class="btn btn-outline">تحميل المزيد</button>
                 </div>
-
-                <div class="form-group">
-                    <label for="job-description">وصف الوظيفة *</label>
-                    <textarea id="job-description" rows="5" required placeholder="اكتب وصفاً مفصلاً للوظيفة..."></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label for="requirements">المتطلبات *</label>
-                    <textarea id="requirements" rows="4" required placeholder="اكتب المتطلبات والشروط..."></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label for="contact-email">البريد الإلكتروني للتواصل *</label>
-                    <input type="email" id="contact-email" required>
-                </div>
-
-                <div class="form-buttons">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-paper-plane"></i> نشر الوظيفة
-                    </button>
-                    <button type="button" class="btn btn-secondary" onclick="resetForm()">
-                        <i class="fas fa-undo"></i> إعادة تعيين
-                    </button>
-                </div>
-            </form>
+            </div>
         </section>
 
-        <!-- Profile Page -->
-        <section id="profile-page" class="page">
-            <div class="page-header">
-                <h1>الملف الشخصي</h1>
-                <p>إدارة معلوماتك الشخصية والمهنية</p>
-            </div>
-
-            <div class="profile-container">
-                <div class="profile-card">
-                    <div class="profile-avatar">
-                        <i class="fas fa-user"></i>
+        <!-- Post Job Section -->
+        <section id="post-job" class="post-job-section hidden">
+            <div class="container">
+                <div class="form-header">
+                    <h2>نشر وظيفة جديدة</h2>
+                    <p>احصل على أفضل المرشحين لوظيفتك</p>
+                </div>
+                
+                <form id="job-form" class="job-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="job-title">عنوان الوظيفة *</label>
+                            <input type="text" id="job-title" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="company-name">اسم الشركة *</label>
+                            <input type="text" id="company-name" required>
+                        </div>
                     </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="job-category">التخصص *</label>
+                            <select id="job-category" required>
+                                <option value="">اختر التخصص</option>
+                                <option value="it">تقنية المعلومات</option>
+                                <option value="marketing">التسويق</option>
+                                <option value="sales">المبيعات</option>
+                                <option value="hr">الموارد البشرية</option>
+                                <option value="finance">المالية</option>
+                                <option value="engineering">الهندسة</option>
+                                <option value="design">التصميم</option>
+                                <option value="education">التعليم</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="experience-level">مستوى الخبرة *</label>
+                            <select id="experience-level" required>
+                                <option value="">اختر مستوى الخبرة</option>
+                                <option value="junior">مبتدئ (0-2 سنة)</option>
+                                <option value="mid">متوسط (2-5 سنوات)</option>
+                                <option value="senior">خبير (5+ سنوات)</option>
+                                <option value="lead">كبير (إدارة)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="job-location">الموقع *</label>
+                            <input type="text" id="job-location" placeholder="المدينة، المنطقة" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="salary-range">نطاق الراتب</label>
+                            <select id="salary-range">
+                                <option value="">غير محدد</option>
+                                <option value="0-3000">أقل من 3000 ريال</option>
+                                <option value="3000-5000">3000 - 5000 ريال</option>
+                                <option value="5000-8000">5000 - 8000 ريال</option>
+                                <option value="8000-12000">8000 - 12000 ريال</option>
+                                <option value="12000+">أكثر من 12000 ريال</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="job-description">وصف الوظيفة *</label>
+                        <textarea id="job-description" rows="6" placeholder="اكتب وصفاً شاملاً للوظيفة والمتطلبات..." required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="requirements">المتطلبات</label>
+                        <textarea id="requirements" rows="4" placeholder="اذكر المتطلبات والمهارات المطلوبة..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="benefits">المزايا</label>
+                        <textarea id="benefits" rows="3" placeholder="اذكر المزايا والفوائد..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="contact-email">البريد الإلكتروني للتواصل *</label>
+                        <input type="email" id="contact-email" required>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-large">
+                            <i class="fas fa-paper-plane"></i>
+                            نشر الوظيفة
+                        </button>
+                        <button type="button" id="cancel-job" class="btn btn-outline">إلغاء</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- Profile Section -->
+        <section id="profile" class="profile-section hidden">
+            <div class="container">
+                <div class="profile-header">
                     <div class="profile-info">
-                        <h3 id="profile-name">غير محدد</h3>
-                        <p id="profile-email">غير محدد</p>
-                        <p id="profile-date">عضو منذ: -</p>
+                        <img id="profile-avatar" class="profile-avatar" src="" alt="Profile">
+                        <div class="profile-details">
+                            <h2 id="profile-name">غير محدد</h2>
+                            <p id="profile-email">غير محدد</p>
+                            <p id="profile-joined">انضم في: -</p>
+                        </div>
+                    </div>
+                    <div class="profile-actions">
+                        <button class="btn btn-outline">تعديل الملف</button>
                     </div>
                 </div>
-
-                <div class="profile-sections">
-                    <div class="profile-section">
-                        <h3>معلومات شخصية</h3>
-                        <form class="profile-form" id="profile-form">
-                            <div class="form-group">
-                                <label for="full-name">الاسم الكامل</label>
-                                <input type="text" id="full-name" placeholder="اسمك الكامل">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="phone">رقم الهاتف</label>
-                                <input type="tel" id="phone" placeholder="رقم الهاتف">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="location">الموقع</label>
-                                <input type="text" id="location" placeholder="المدينة، البلد">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="linkedin">LinkedIn</label>
-                                <input type="url" id="linkedin" placeholder="رابط LinkedIn">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="portfolio">موقع شخصي</label>
-                                <input type="url" id="portfolio" placeholder="رابط الموقع الشخصي">
-                            </div>
-                        </form>
+                
+                <div class="profile-stats">
+                    <div class="stat-card">
+                        <h3>الوظائف المنشورة</h3>
+                        <span id="posted-jobs-count">0</span>
                     </div>
-
-                    <div class="profile-section">
-                        <h3>المهارات والخبرات</h3>
-                        <form class="skills-form" id="skills-form">
-                            <div class="form-group">
-                                <label for="skills">المهارات</label>
-                                <textarea id="skills" rows="3" placeholder="اكتب مهاراتك مفصولة بفواصل..."></textarea>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="experience">سنوات الخبرة</label>
-                                <select id="experience">
-                                    <option value="">اختر سنوات الخبرة</option>
-                                    <option value="0-1">0-1 سنة</option>
-                                    <option value="2-3">2-3 سنوات</option>
-                                    <option value="4-5">4-5 سنوات</option>
-                                    <option value="5+">5+ سنوات</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="education">التعليم</label>
-                                <textarea id="education" rows="3" placeholder="اكتب شهاداتك التعليمية..."></textarea>
-                            </div>
-                            
-                            <button type="submit" class="btn btn-primary">حفظ التغييرات</button>
-                        </form>
+                    <div class="stat-card">
+                        <h3>طلبات التقديم</h3>
+                        <span id="applications-count">0</span>
+                    </div>
+                    <div class="stat-card">
+                        <h3>المفضلة</h3>
+                        <span id="favorites-count">0</span>
                     </div>
                 </div>
             </div>
         </section>
     </main>
 
-    <!-- Login Modal -->
-    <div id="login-modal" class="modal">
+    <!-- Job Modal -->
+    <div id="job-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>تسجيل الدخول</h2>
-                <span class="close" onclick="closeLogin()">&times;</span>
+                <h3 id="modal-job-title"></h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="job-meta">
+                    <div class="meta-item">
+                        <i class="fas fa-building"></i>
+                        <span id="modal-company"></span>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span id="modal-location"></span>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-clock"></i>
+                        <span id="modal-date"></span>
+                    </div>
+                </div>
+                
+                <div class="job-description">
+                    <h4>وصف الوظيفة</h4>
+                    <p id="modal-description"></p>
+                </div>
+                
+                <div class="job-requirements">
+                    <h4>المتطلبات</h4>
+                    <p id="modal-requirements"></p>
+                </div>
+                
+                <div class="job-benefits">
+                    <h4>المزايا</h4>
+                    <p id="modal-benefits"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="apply-btn" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i>
+                    تقديم طلب
+                </button>
+                <button id="save-btn" class="btn btn-outline">
+                    <i class="fas fa-heart"></i>
+                    حفظ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal hidden">
+        <div class="modal-content auth-modal">
+            <div class="modal-header">
+                <h3 id="auth-modal-title">تسجيل الدخول</h3>
+                <button class="modal-close">&times;</button>
             </div>
             
-            <div class="auth-tabs">
-                <button class="tab-btn active" onclick="switchAuthTab('login')">تسجيل الدخول</button>
-                <button class="tab-btn" onclick="switchAuthTab('register')">إنشاء حساب</button>
+            <div class="modal-body">
+                <!-- Login Form -->
+                <form id="login-form" class="auth-form">
+                    <div class="form-group">
+                        <label for="login-email">البريد الإلكتروني</label>
+                        <input type="email" id="login-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">كلمة المرور</label>
+                        <input type="password" id="login-password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">تسجيل الدخول</button>
+                </form>
+                
+                <!-- Register Form -->
+                <form id="register-form" class="auth-form hidden">
+                    <div class="form-group">
+                        <label for="register-name">الاسم الكامل</label>
+                        <input type="text" id="register-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-email">البريد الإلكتروني</label>
+                        <input type="email" id="register-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">كلمة المرور</label>
+                        <input type="password" id="register-password" required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm-password">تأكيد كلمة المرور</label>
+                        <input type="password" id="confirm-password" required minlength="6">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">إنشاء حساب</button>
+                </form>
+                
+                <div class="auth-switch">
+                    <p id="switch-to-register">ليس لديك حساب؟ <a href="#" id="show-register">إنشاء حساب</a></p>
+                    <p id="switch-to-login" class="hidden">لديك حساب بالفعل؟ <a href="#" id="show-login">تسجيل الدخول</a></p>
+                </div>
             </div>
-            
-            <!-- Login Form -->
-            <form id="login-form" class="auth-form">
-                <div class="form-group">
-                    <label for="login-email">البريد الإلكتروني</label>
-                    <input type="email" id="login-email" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="login-password">كلمة المرور</label>
-                    <input type="password" id="login-password" required>
-                </div>
-                
-                <button type="submit" class="btn btn-primary">تسجيل الدخول</button>
-            </form>
-            
-            <!-- Register Form -->
-            <form id="register-form" class="auth-form" style="display: none;">
-                <div class="form-group">
-                    <label for="register-name">الاسم الكامل</label>
-                    <input type="text" id="register-name" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="register-email">البريد الإلكتروني</label>
-                    <input type="email" id="register-email" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="register-password">كلمة المرور</label>
-                    <input type="password" id="register-password" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="register-confirm-password">تأكيد كلمة المرور</label>
-                    <input type="password" id="register-confirm-password" required>
-                </div>
-                
-                <button type="submit" class="btn btn-primary">إنشاء حساب</button>
-            </form>
-            
-            <div class="auth-divider">
-                <span>أو</span>
-            </div>
-            
-            <button class="btn btn-google" onclick="signInWithGoogle()">
-                <i class="fab fa-google"></i> تسجيل الدخول باستخدام Google
-            </button>
         </div>
     </div>
 
     <!-- Toast Notifications -->
-    <div id="toast-container"></div>
+    <div id="toast-container" class="toast-container"></div>
 
-    <!-- JavaScript -->
+    <!-- Scripts -->
     <script src="app.js"></script>
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then((registration) => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch((registrationError) => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+    </script>
 </body>
 </html>

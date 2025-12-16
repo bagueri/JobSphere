@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="تثبيت تطبيق منصة الوظائف على جهازك">
+    <meta name="theme-color" content="#1976d2">
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="الوظائف">
+    
+    <title>تثبيت التطبيق - منصة الوظائف</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-spinner"></div>
+        <p>جاري التحميل...</p>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <nav class="navbar">
+            <div class="nav-brand">
+                <i class="fas fa-briefcase"></i>
+                <h1>الوظائف</h1>
+            </div>
+            
+            <div class="nav-menu" id="nav-menu">
+                <a href="index.html" class="nav-link">الرئيسية</a>
+                <a href="index.html#search" class="nav-link">البحث</a>
+                <a href="index.html#post-job" class="nav-link">نشر وظيفة</a>
+                <a href="index.html#profile" class="nav-link">الملف الشخصي</a>
+                <a href="install.html" class="nav-link active">تثبيت التطبيق</a>
+            </div>
+            
+            <div class="nav-toggle" id="nav-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <!-- Install Hero Section -->
+        <section class="install-hero">
+            <div class="container">
+                <div class="install-content">
+                    <div class="install-info">
+                        <h2>احصل على التطبيق على جهازك</h2>
+                        <p>استمتع بتجربة أفضل وأسرع مع تطبيق منصة الوظائف</p>
+                        
+                        <div class="install-features">
+                            <div class="feature">
+                                <i class="fas fa-rocket"></i>
+                                <div>
+                                    <h3>أداء سريع</h3>
+                                    <p>تحميل فوري واستجابة سريعة</p>
+                                </div>
+                            </div>
+                            
+                            <div class="feature">
+                                <i class="fas fa-mobile-alt"></i>
+                                <div>
+                                    <h3>يعمل بدون إنترنت</h3>
+                                    <p>تصفح الوظائف حتى بدون اتصال</p>
+                                </div>
+                            </div>
+                            
+                            <div class="feature">
+                                <i class="fas fa-bell"></i>
+                                <div>
+                                    <h3>إشعارات فورية</h3>
+                                    <p>احصل على تنبيهات الوظائف الجديدة</p>
+                                </div>
+                            </div>
+                            
+                            <div class="feature">
+                                <i class="fas fa-star"></i>
+                                <div>
+                                    <h3>تجربة مميزة</h3>
+                                    <p>واجهة مصممة خصيصاً للأجهزة المحمولة</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="install-visual">
+                        <div class="phone-mockup">
+                            <div class="phone-screen">
+                                <div class="app-icon">
+                                    <i class="fas fa-briefcase"></i>
+                                </div>
+                                <h3>منصة الوظائف</h3>
+                                <div class="mockup-features">
+                                    <div class="mockup-feature">
+                                        <i class="fas fa-search"></i>
+                                        <span>بحث ذكي</span>
+                                    </div>
+                                    <div class="mockup-feature">
+                                        <i class="fas fa-plus"></i>
+                                        <span>نشر سهل</span>
+                                    </div>
+                                    <div class="mockup-feature">
+                                        <i class="fas fa-user"></i>
+                                        <span>ملف شخصي</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Install Methods Section -->
+        <section class="install-methods">
+            <div class="container">
+                <h2>كيفية تثبيت التطبيق</h2>
+                
+                <div class="install-options">
+                    <!-- Android -->
+                    <div class="install-option">
+                        <div class="option-header">
+                            <i class="fab fa-android"></i>
+                            <h3>أجهزة أندرويد</h3>
+                        </div>
+                        <div class="option-steps">
+                            <div class="step">
+                                <span class="step-number">1</span>
+                                <p>افتح المتصفح (Chrome أو Edge)</p>
+                            </div>
+                            <div class="step">
+                                <span class="step-number">2</span>
+                                <p>انتقل إلى موقع التطبيق</p>
+                            </div>
+                            <div class="step">
+                                <span class="step-number">3</span>
+                                <p>اضغط على "تثبيت" في شريط التنقل</p>
+                            </div>
+                            <div class="step">
+                                <span class="step-number">4</span>
+                                <p>اضغط "تثبيت" في النافذة المنبثقة</p>
+                            </div>
+                        </div>
+                        <div class="install-btn-container">
+                            <button id="android-install-btn" class="btn btn-primary btn-large">
+                                <i class="fab fa-google-play"></i>
+                                تثبيت الآن
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- iOS -->
+                    <div class="install-option">
+                        <div class="option-header">
+                            <i class="fab fa-apple"></i>
+                            <h3>أجهزة iPhone/iPad</h3>
+                        </div>
+                        <div class="option-steps">
+                            <div class="step">
+                                <span class="step-number">1</span>
+                                <p>افتح Safari (مطلوب)</p>
+                            </div>
+                            <div class="step">
+                                <span class="step-number">2</span>
+                                <p>انتقل إلى موقع التطبيق</p>
+                            </div>
+                            <div class="step">
+                                <span class="step-number">3</span>
+                                <p>اضغط على زر المشاركة <i class="fas fa-share"></i></p>
+                            </div>
+                            <div class="step">
+                                <span class="step-number">4</span>
+                                <p>اختر "إضافة إلى الشاشة الرئيسية"</p>
+                            </div>
+                        </div>
+                        <div class="ios-instructions">
+                            <div class="instruction-card">
+                                <i class="fas fa-share"></i>
+                                <p>اضغط على زر المشاركة في Safari</p>
+                            </div>
+                            <div class="instruction-card">
+                                <i class="fas fa-plus"></i>
+                                <p>اختر "إضافة إلى الشاشة الرئيسية"</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Desktop -->
+                    <div class="install-option">
+                        <div class="option-header">
+                            <i class="fas fa-desktop"></i>
+                            <h3>أجهزة الكمبيوتر</h3>
+                        </div>
+                        <div class="option-steps">
+                            <div class="step">
+                                <span class="step-number">1</span>
+                                <p>افتح Chrome أو Edge</p>
+                            </div>
+                            <div class="step">
+                                <span class="step-number">2</span>
+                                <p>انتقل إلى موقع التطبيق</p>
+                            </div>
+                            <div class="step">
+                                <span class="step-number">3</span>
+                                <p>ابحث عن أيقونة التثبيت في شريط العنوان</p>
+                            </div>
+                            <div class="step">
+                                <span class="step-number">4</span>
+                                <p>اضغط على الأيقونة لتثبيت التطبيق</p>
+                            </div>
+                        </div>
+                        <div class="desktop-features">
+                            <div class="feature-highlight">
+                                <i class="fas fa-window-maximize"></i>
+                                <span>يعمل في نافذة منفصلة</span>
+                            </div>
+                            <div class="feature-highlight">
+                                <i class="fas fa-mouse-pointer"></i>
+                                <span>وصول سريع من سطح المكتب</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Benefits Section -->
+        <section class="benefits">
+            <div class="container">
+                <h2>مميزات التطبيق</h2>
+                <div class="benefits-grid">
+                    <div class="benefit-card">
+                        <div class="benefit-icon">
+                            <i class="fas fa-download"></i>
+                        </div>
+                        <h3>تثبيت سريع</h3>
+                        <p>احصل على التطبيق في ثوانٍ معدودة بدون الحاجة للمتاجر</p>
+                    </div>
+                    
+                    <div class="benefit-card">
+                        <div class="benefit-icon">
+                            <i class="fas fa-sync"></i>
+                        </div>
+                        <h3>تحديثات تلقائية</h3>
+                        <p>احصل على آخر التحديثات والميزات تلقائياً</p>
+                    </div>
+                    
+                    <div class="benefit-card">
+                        <div class="benefit-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h3>آمن ومحمي</h3>
+                        <p>حماية عالية لبياناتك الشخصية والمالية</p>
+                    </div>
+                    
+                    <div class="benefit-card">
+                        <div class="benefit-icon">
+                            <i class="fas fa-palette"></i>
+                        </div>
+                        <h3>تصميم جميل</h3>
+                        <p>واجهة مستخدم عصرية وسهلة الاستخدام</p>
+                    </div>
+                    
+                    <div class="benefit-card">
+                        <div class="benefit-icon">
+                            <i class="fas fa-language"></i>
+                        </div>
+                        <h3>دعم عربي كامل</h3>
+                        <p>تصميم مخصص للغة العربية والاتجاه من اليمين لليسار</p>
+                    </div>
+                    
+                    <div class="benefit-card">
+                        <div class="benefit-icon">
+                            <i class="fas fa-headset"></i>
+                        </div>
+                        <h3>دعم فني</h3>
+                        <p>فريق دعم متاح لمساعدتك في أي وقت</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section class="faq">
+            <div class="container">
+                <h2>الأسئلة الشائعة</h2>
+                <div class="faq-list">
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <h3>هل التطبيق مجاني؟</h3>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="faq-answer">
+                            <p>نعم، التطبيق مجاني تماماً. يمكنك البحث عن الوظائف ونشرها دون أي رسوم.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <h3>هل يعمل التطبيق بدون إنترنت؟</h3>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="faq-answer">
+                            <p>يمكنك تصفح الوظائف المحفوظة والبحث بدون إنترنت، لكن تحتاج للاتترنت لنشر وظائف جديدة أو التحديث.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <h3>هل بياناتي آمنة؟</h3>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="faq-answer">
+                            <p>نعم، نحن نستخدم Firebase لأمان عالي المستوى وحماية بياناتك الشخصية.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <h3>هل يمكنني استخدام التطبيق على عدة أجهزة؟</h3>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="faq-answer">
+                            <p>نعم، يمكنك تسجيل الدخول من أي جهاز والوصول لحسابك وبياناتك.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Install Banner -->
+    <div id="install-banner" class="install-banner hidden">
+        <div class="install-content">
+            <i class="fas fa-mobile-alt"></i>
+            <div class="install-text">
+                <h3>تثبيت التطبيق</h3>
+                <p>احصل على تجربة أفضل بتثبيت التطبيق على جهازك</p>
+            </div>
+            <div class="install-buttons">
+                <button id="install-btn" class="btn-install">تثبيت</button>
+                <button id="dismiss-btn" class="btn-dismiss">لاحقاً</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Install PWA functionality
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            showInstallBanner();
+        });
+
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA was installed');
+            hideInstallBanner();
+            showToast('تم تثبيت التطبيق بنجاح!', 'success');
+        });
+
+        function showInstallBanner() {
+            const banner = document.getElementById('install-banner');
+            banner.classList.remove('hidden');
+            banner.classList.add('show');
+        }
+
+        function hideInstallBanner() {
+            const banner = document.getElementById('install-banner');
+            banner.classList.remove('show');
+            setTimeout(() => {
+                banner.classList.add('hidden');
+            }, 300);
+        }
+
+        async function installApp() {
+            if (!deferredPrompt) return;
+
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            
+            if (outcome === 'accepted') {
+                console.log('User accepted the install prompt');
+            } else {
+                console.log('User dismissed the install prompt');
+            }
+
+            deferredPrompt = null;
+            hideInstallBanner();
+        }
+
+        // Event listeners
+        document.getElementById('install-btn')?.addEventListener('click', installApp);
+        document.getElementById('dismiss-btn')?.addEventListener('click', hideInstallBanner);
+        document.getElementById('android-install-btn')?.addEventListener('click', installApp);
+
+        // FAQ functionality
+        document.querySelectorAll('.faq-question').forEach(question => {
+            question.addEventListener('click', () => {
+                const faqItem = question.parentElement;
+                const answer = faqItem.querySelector('.faq-answer');
+                const icon = question.querySelector('i');
+                
+                faqItem.classList.toggle('active');
+                if (faqItem.classList.contains('active')) {
+                    answer.style.maxHeight = answer.scrollHeight + 'px';
+                    icon.style.transform = 'rotate(180deg)';
+                } else {
+                    answer.style.maxHeight = '0';
+                    icon.style.transform = 'rotate(0deg)';
+                }
+            });
+        });
+
+        // Mobile menu toggle
+        document.getElementById('nav-toggle')?.addEventListener('click', () => {
+            const navMenu = document.getElementById('nav-menu');
+            navMenu.classList.toggle('active');
+        });
+
+        // Show install banner after 10 seconds if not dismissed
+        setTimeout(() => {
+            const dismissed = localStorage.getItem('install-banner-dismissed');
+            if (!dismissed && deferredPrompt) {
+                showInstallBanner();
+            }
+        }, 10000);
+
+        // Toast notification function
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toast-container') || createToastContainer();
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <i class="fas fa-${getToastIcon(type)}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+
+            toastContainer.appendChild(toast);
+
+            setTimeout(() => toast.classList.add('show'), 100);
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+
+        function createToastContainer() {
+            const container = document.createElement('div');
+            container.id = 'toast-container';
+            container.className = 'toast-container';
+            document.body.appendChild(container);
+            return container;
+        }
+
+        function getToastIcon(type) {
+            const icons = {
+                success: 'check-circle',
+                error: 'exclamation-circle',
+                warning: 'exclamation-triangle',
+                info: 'info-circle'
+            };
+            return icons[type] || 'info-circle';
+        }
+
+        // Hide loading screen
+        setTimeout(() => {
+            document.getElementById('loading-screen')?.classList.add('hidden');
+        }, 1000);
+    </script>
+</body>
+</html>

@@ -1,824 +1,930 @@
-// Firebase Configuration
-const firebaseConfig = {
-    apiKey: "AIzaSyAGq9x3zOZXfqEZ3tMFRuUUTHnuHKNTRgI",
-    authDomain: "pixelbuilder2-auth.firebaseapp.com",
-    databaseURL: "https://pixelbuilder2-auth-default-rtdb.firebaseio.com",
-    projectId: "pixelbuilder2-auth",
-    storageBucket: "pixelbuilder2-auth.firebasestorage.app",
-    messagingSenderId: "296299154171",
-    appId: "1:296299154171:web:a4a68db29625b2d902fe5e",
-    measurementId: "G-GGPBBJ2FYP"
-};
-
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-
-// Global Variables
-let currentUser = null;
-let jobsData = [];
-let filteredJobs = [];
-let currentPage = 1;
-const jobsPerPage = 10;
-
-// DOM Elements
-const loadingScreen = document.getElementById('loading');
-const loginModal = document.getElementById('login-modal');
-const navMenu = document.getElementById('nav-menu');
-const hamburger = document.getElementById('hamburger');
-
-// Initialize App
-document.addEventListener('DOMContentLoaded', function() {
-    initializeApp();
-});
-
-// Initialize Application
-async function initializeApp() {
-    try {
-        // Show loading screen
-        showLoading();
+// Job PWA Application
+class JobApp {
+    constructor() {
+        this.firebase = null;
+        this.auth = null;
+        this.database = null;
+        this.currentUser = null;
+        this.jobs = [];
+        this.filteredJobs = [];
+        this.currentPage = 0;
+        this.jobsPerPage = 10;
+        this.deferredPrompt = null;
+        this.isOnline = navigator.onLine;
         
-        // Register Service Worker
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
-        }
-        
-        // Setup event listeners
-        setupEventListeners();
-        
-        // Setup Firebase Auth state observer
-        auth.onAuthStateChanged(async (user) => {
-            currentUser = user;
-            updateUIForAuthState(user);
+        this.init();
+    }
+
+    async init() {
+        try {
+            // Show loading screen
+            this.showLoading();
             
-            if (user) {
-                await loadUserProfile(user.uid);
-                await loadJobs();
-            } else {
-                await loadSampleJobs();
-            }
-        });
-        
-        // Initialize mobile menu
-        setupMobileMenu();
-        
-        // Hide loading screen
-        hideLoading();
-        
-    } catch (error) {
-        console.error('خطأ في تهيئة التطبيق:', error);
-        showToast('خطأ في تحميل التطبيق', 'error');
-        hideLoading();
-    }
-}
-
-// Setup Event Listeners
-function setupEventListeners() {
-    // Login form
-    document.getElementById('login-form').addEventListener('submit', handleLogin);
-    
-    // Register form
-    document.getElementById('register-form').addEventListener('submit', handleRegister);
-    
-    // Job form
-    document.getElementById('job-form').addEventListener('submit', handleJobSubmission);
-    
-    // Profile forms
-    document.getElementById('profile-form').addEventListener('submit', handleProfileUpdate);
-    document.getElementById('skills-form').addEventListener('submit', handleSkillsUpdate);
-    
-    // Search functionality
-    document.getElementById('search-input').addEventListener('input', debounce(searchJobs, 300));
-    document.getElementById('category-filter').addEventListener('change', filterJobs);
-    document.getElementById('experience-filter').addEventListener('change', filterJobs);
-    document.getElementById('location-filter').addEventListener('change', filterJobs);
-    
-    // Modal close on outside click
-    window.addEventListener('click', function(event) {
-        if (event.target === loginModal) {
-            closeLogin();
+            // Initialize Firebase
+            await this.initFirebase();
+            
+            // Setup PWA install prompt
+            this.setupPWAInstall();
+            
+            // Setup event listeners
+            this.setupEventListeners();
+            
+            // Check authentication state
+            this.checkAuthState();
+            
+            // Load jobs
+            await this.loadJobs();
+            
+            // Hide loading screen
+            this.hideLoading();
+            
+            // Show install banner if eligible
+            this.checkInstallEligibility();
+            
+            console.log('App initialized successfully');
+        } catch (error) {
+            console.error('Failed to initialize app:', error);
+            this.showToast('خطأ في تحميل التطبيق', 'error');
+            this.hideLoading();
         }
-    });
-}
-
-// Setup Mobile Menu
-function setupMobileMenu() {
-    hamburger.addEventListener('click', function() {
-        navMenu.classList.toggle('active');
-        hamburger.classList.toggle('active');
-    });
-    
-    // Close mobile menu when clicking on nav links
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', () => {
-            navMenu.classList.remove('active');
-            hamburger.classList.remove('active');
-        });
-    });
-}
-
-// Authentication Functions
-async function handleLogin(e) {
-    e.preventDefault();
-    
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
-    
-    try {
-        showLoading();
-        const userCredential = await auth.signInWithEmailAndPassword(email, password);
-        showToast('تم تسجيل الدخول بنجاح!', 'success');
-        closeLogin();
-    } catch (error) {
-        showToast(getErrorMessage(error.code), 'error');
-    } finally {
-        hideLoading();
     }
-}
 
-async function handleRegister(e) {
-    e.preventDefault();
-    
-    const name = document.getElementById('register-name').value;
-    const email = document.getElementById('register-email').value;
-    const password = document.getElementById('register-password').value;
-    const confirmPassword = document.getElementById('register-confirm-password').value;
-    
-    if (password !== confirmPassword) {
-        showToast('كلمات المرور غير متطابقة', 'error');
-        return;
+    async initFirebase() {
+        try {
+            // Initialize Firebase app
+            const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
+            const { getAuth, onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+            const { getDatabase, ref, push, set, get, query, orderByChild, equalTo } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+
+            this.firebase = initializeApp(window.firebaseConfig);
+            this.auth = getAuth(this.firebase);
+            this.database = getDatabase(this.firebase);
+
+            // Listen for auth state changes
+            onAuthStateChanged(this.auth, (user) => {
+                this.handleAuthStateChange(user);
+            });
+
+        } catch (error) {
+            console.error('Firebase initialization error:', error);
+            throw error;
+        }
     }
-    
-    try {
-        showLoading();
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-        
-        // Update user profile
-        await userCredential.user.updateProfile({
-            displayName: name
+
+    setupPWAInstall() {
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            this.deferredPrompt = e;
+            this.showInstallBanner();
         });
-        
-        // Create user document in Firestore
-        await db.collection('users').doc(userCredential.user.uid).set({
-            name: name,
-            email: email,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            profile: {
-                phone: '',
-                location: '',
-                linkedin: '',
-                portfolio: '',
-                skills: '',
-                experience: '',
-                education: ''
+
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA was installed');
+            this.hideInstallBanner();
+            this.showToast('تم تثبيت التطبيق بنجاح!', 'success');
+        });
+    }
+
+    setupEventListeners() {
+        // Navigation
+        document.getElementById('nav-toggle')?.addEventListener('click', () => {
+            this.toggleMobileMenu();
+        });
+
+        // Search functionality
+        document.getElementById('search-btn')?.addEventListener('click', () => {
+            this.performSearch();
+        });
+
+        document.getElementById('job-search')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.performSearch();
             }
         });
-        
-        showToast('تم إنشاء الحساب بنجاح!', 'success');
-        closeLogin();
-    } catch (error) {
-        showToast(getErrorMessage(error.code), 'error');
-    } finally {
-        hideLoading();
-    }
-}
 
-async function signInWithGoogle() {
-    try {
-        showLoading();
-        const provider = new firebase.auth.GoogleAuthProvider();
-        const userCredential = await auth.signInWithPopup(provider);
-        
-        // Create user document if it doesn't exist
-        const userDoc = await db.collection('users').doc(userCredential.user.uid).get();
-        if (!userDoc.exists) {
-            await db.collection('users').doc(userCredential.user.uid).set({
-                name: userCredential.user.displayName || '',
-                email: userCredential.user.email || '',
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                profile: {
-                    phone: '',
-                    location: '',
-                    linkedin: '',
-                    portfolio: '',
-                    skills: '',
-                    experience: '',
-                    education: ''
+        document.getElementById('location-search')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.performSearch();
+            }
+        });
+
+        // Filters
+        document.getElementById('category-filter')?.addEventListener('change', () => {
+            this.applyFilters();
+        });
+
+        document.getElementById('experience-filter')?.addEventListener('change', () => {
+            this.applyFilters();
+        });
+
+        document.getElementById('salary-filter')?.addEventListener('change', () => {
+            this.applyFilters();
+        });
+
+        // Job form
+        document.getElementById('job-form')?.addEventListener('submit', (e) => {
+            this.handleJobSubmission(e);
+        });
+
+        // Authentication
+        document.getElementById('login-btn')?.addEventListener('click', () => {
+            this.showAuthModal('login');
+        });
+
+        document.getElementById('logout-btn')?.addEventListener('click', () => {
+            this.logout();
+        });
+
+        // Auth forms
+        document.getElementById('login-form')?.addEventListener('submit', (e) => {
+            this.handleLogin(e);
+        });
+
+        document.getElementById('register-form')?.addEventListener('submit', (e) => {
+            this.handleRegister(e);
+        });
+
+        // Auth modal switching
+        document.getElementById('show-register')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.showAuthModal('register');
+        });
+
+        document.getElementById('show-login')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.showAuthModal('login');
+        });
+
+        // Install buttons
+        document.getElementById('install-btn')?.addEventListener('click', () => {
+            this.installApp();
+        });
+
+        document.getElementById('dismiss-btn')?.addEventListener('click', () => {
+            this.hideInstallBanner();
+        });
+
+        // Modal close
+        document.querySelectorAll('.modal-close')?.forEach(closeBtn => {
+            closeBtn.addEventListener('click', () => {
+                this.closeModal();
+            });
+        });
+
+        // Load more
+        document.getElementById('load-more-btn')?.addEventListener('click', () => {
+            this.loadMoreJobs();
+        });
+
+        // Online/offline detection
+        window.addEventListener('online', () => {
+            this.isOnline = true;
+            this.showToast('تم الاتصال بالإنترنت', 'success');
+        });
+
+        window.addEventListener('offline', () => {
+            this.isOnline = false;
+            this.showToast('لا يوجد اتصال بالإنترنت', 'warning');
+        });
+
+        // Navigation links
+        document.querySelectorAll('.nav-link')?.forEach(link => {
+            link.addEventListener('click', (e) => {
+                if (link.getAttribute('href').startsWith('#')) {
+                    e.preventDefault();
+                    const target = link.getAttribute('href').substring(1);
+                    this.navigateTo(target);
                 }
             });
-        }
-        
-        showToast('تم تسجيل الدخول بنجاح!', 'success');
-        closeLogin();
-    } catch (error) {
-        showToast(getErrorMessage(error.code), 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-async function signOut() {
-    try {
-        await auth.signOut();
-        showToast('تم تسجيل الخروج بنجاح', 'success');
-        updateUIForAuthState(null);
-        showPage('home');
-    } catch (error) {
-        showToast('خطأ في تسجيل الخروج', 'error');
-    }
-}
-
-// Job Functions
-async function loadJobs() {
-    try {
-        const querySnapshot = await db.collection('jobs')
-            .orderBy('createdAt', 'desc')
-            .get();
-        
-        jobsData = [];
-        querySnapshot.forEach((doc) => {
-            jobsData.push({
-                id: doc.id,
-                ...doc.data()
-            });
         });
-        
-        filteredJobs = [...jobsData];
-        displayJobs();
-    } catch (error) {
-        console.error('خطأ في تحميل الوظائف:', error);
-        await loadSampleJobs();
     }
-}
 
-async function loadSampleJobs() {
-    // Sample jobs data for demonstration
-    jobsData = [
-        {
-            id: '1',
-            title: 'مطور واجهات أمامية',
-            company: 'شركة التقنية المتقدمة',
-            category: 'technology',
-            type: 'full-time',
-            experience: 'mid',
-            location: 'riyadh',
-            salary: '8000 - 12000 ريال',
-            description: 'نحن نبحث عن مطور واجهات أمامية ماهر للعمل على مشاريع متنوعة باستخدام أحدث التقنيات.',
-            requirements: 'خبرة 2-4 سنوات في React/Vue.js، إتقان HTML/CSS/JavaScript، خبرة في Git',
-            contactEmail: 'hr@tech-company.com',
-            createdAt: new Date(),
-            postedBy: 'system'
-        },
-        {
-            id: '2',
-            title: 'أخصائي تسويق رقمي',
-            company: 'وكالة التسويق الإبداعي',
-            category: 'marketing',
-            type: 'full-time',
-            experience: 'entry',
-            location: 'jeddah',
-            salary: '6000 - 9000 ريال',
-            description: 'نحتاج لأخصائي تسويق رقمي شغوف لقيادة حملاتنا الإعلانية عبر وسائل التواصل الاجتماعي.',
-            requirements: 'خبرة في إدارة الحملات الإعلانية، إتقان Google Ads و Facebook Ads',
-            contactEmail: 'jobs@creative-agency.com',
-            createdAt: new Date(),
-            postedBy: 'system'
-        },
-        {
-            id: '3',
-            title: 'محاسب مالي',
-            company: 'مجموعة الأعمال المتكاملة',
-            category: 'finance',
-            type: 'full-time',
-            experience: 'senior',
-            location: 'dammam',
-            salary: '10000 - 15000 ريال',
-            description: 'نبحث عن محاسب مالي ذو خبرة عالية لإدارة العمليات المالية للشركة.',
-            requirements: 'درجة البكالوريوس في المحاسبة، خبرة 5+ سنوات، إتقان برامج المحاسبة',
-            contactEmail: 'finance@business-group.com',
-            createdAt: new Date(),
-            postedBy: 'system'
+    async loadJobs() {
+        try {
+            if (!this.database) return;
+
+            const jobsRef = ref(this.database, 'jobs');
+            const snapshot = await get(jobsRef);
+            
+            if (snapshot.exists()) {
+                this.jobs = Object.values(snapshot.val());
+                this.filteredJobs = [...this.jobs];
+                this.updateJobStats();
+                this.displayJobs();
+            } else {
+                // Load sample jobs if no jobs exist
+                await this.loadSampleJobs();
+            }
+        } catch (error) {
+            console.error('Error loading jobs:', error);
+            this.showToast('خطأ في تحميل الوظائف', 'error');
         }
-    ];
-    
-    filteredJobs = [...jobsData];
-    displayJobs();
-}
-
-function displayJobs() {
-    const jobsList = document.getElementById('jobs-list');
-    const startIndex = 0;
-    const endIndex = Math.min(currentPage * jobsPerPage, filteredJobs.length);
-    const jobsToShow = filteredJobs.slice(startIndex, endIndex);
-    
-    if (currentPage === 1) {
-        jobsList.innerHTML = '';
     }
-    
-    jobsToShow.forEach(job => {
-        const jobCard = createJobCard(job);
-        jobsList.appendChild(jobCard);
-    });
-    
-    // Update load more button
-    const loadMoreBtn = document.querySelector('.load-more');
-    if (endIndex >= filteredJobs.length) {
-        loadMoreBtn.style.display = 'none';
-    } else {
-        loadMoreBtn.style.display = 'block';
-    }
-}
 
-function createJobCard(job) {
-    const card = document.createElement('div');
-    card.className = 'job-card';
-    
-    const categoryText = getCategoryText(job.category);
-    const typeText = getJobTypeText(job.type);
-    const experienceText = getExperienceText(job.experience);
-    const locationText = getLocationText(job.location);
-    
-    card.innerHTML = `
-        <div class="job-header">
-            <div>
-                <h3 class="job-title">${job.title}</h3>
-                <p class="company-name">${job.company}</p>
+    async loadSampleJobs() {
+        const sampleJobs = [
+            {
+                id: '1',
+                title: 'مطور واجهات أمامية',
+                company: 'شركة التقنية المتقدمة',
+                category: 'it',
+                experience: 'mid',
+                location: 'الرياض، السعودية',
+                salary: '8000-12000',
+                description: 'نبحث عن مطور واجهات أمامية متمرس للعمل على مشاريع متنوعة. يجب أن يكون لديه خبرة في React و JavaScript و CSS.',
+                requirements: '• خبرة 3+ سنوات في React\n• إتقان JavaScript ES6+\n• معرفة CSS/Sass\n• خبرة في Git',
+                benefits: '• راتب تنافسي\n• تأمين صحي\n• مرونة في العمل\n• بيئة عمل محفزة',
+                contactEmail: 'jobs@tech-saudi.com',
+                datePosted: new Date().toISOString(),
+                postedBy: 'system'
+            },
+            {
+                id: '2',
+                title: 'مدير تسويق رقمي',
+                company: 'وكالة الإعلان الذكي',
+                category: 'marketing',
+                experience: 'senior',
+                location: 'جدة، السعودية',
+                salary: '12000-15000',
+                description: 'نبحث عن مدير تسويق رقمي متمرس لإدارة حملات التسويق الرقمي وتطوير استراتيجيات التسويق.',
+                requirements: '• خبرة 5+ سنوات في التسويق الرقمي\n• معرفة Google Ads و Facebook Ads\n• مهارات تحليل البيانات\n• خبرة في SEO/SEM',
+                benefits: '• راتب عالي\n• مكافآت أداء\n• تدريب مستمر\n• مزايا إضافية',
+                contactEmail: 'careers@smart-ads.com',
+                datePosted: new Date(Date.now() - 86400000).toISOString(),
+                postedBy: 'system'
+            },
+            {
+                id: '3',
+                title: 'مصمم جرافيك',
+                company: 'استوديو التصميم الإبداعي',
+                category: 'design',
+                experience: 'mid',
+                location: 'الدمام، السعودية',
+                salary: '5000-8000',
+                description: 'نبحث عن مصمم جرافيك مبدع لإنشاء تصاميم جذابة ومبتكرة للمشاريع المختلفة.',
+                requirements: '• خبرة 2+ سنوات في التصميم\n• إتقان Adobe Creative Suite\n• مهارات في التصميم الطباعي والرقمي\n• إبداع وابتكار',
+                benefits: '• بيئة عمل إبداعية\n• مشاريع متنوعة\n• راتب تنافسي\n• مرونة في الأوقات',
+                contactEmail: 'design@creative-studio.com',
+                datePosted: new Date(Date.now() - 172800000).toISOString(),
+                postedBy: 'system'
+            }
+        ];
+
+        // Save sample jobs to database
+        for (const job of sampleJobs) {
+            await this.saveJob(job);
+        }
+
+        this.jobs = sampleJobs;
+        this.filteredJobs = [...sampleJobs];
+        this.updateJobStats();
+        this.displayJobs();
+    }
+
+    async saveJob(jobData) {
+        try {
+            if (!this.database || !this.currentUser) {
+                throw new Error('يجب تسجيل الدخول لحفظ الوظائف');
+            }
+
+            const jobsRef = ref(this.database, 'jobs');
+            const newJobRef = push(jobsRef);
+            
+            const job = {
+                ...jobData,
+                id: newJobRef.key,
+                postedBy: this.currentUser.uid,
+                datePosted: new Date().toISOString()
+            };
+
+            await set(newJobRef, job);
+            return job;
+        } catch (error) {
+            console.error('Error saving job:', error);
+            throw error;
+        }
+    }
+
+    displayJobs() {
+        const container = document.getElementById('jobs-container');
+        if (!container) return;
+
+        const startIndex = this.currentPage * this.jobsPerPage;
+        const endIndex = startIndex + this.jobsPerPage;
+        const jobsToShow = this.filteredJobs.slice(startIndex, endIndex);
+
+        if (this.currentPage === 0) {
+            container.innerHTML = '';
+        }
+
+        jobsToShow.forEach(job => {
+            const jobCard = this.createJobCard(job);
+            container.appendChild(jobCard);
+        });
+
+        // Show/hide load more button
+        const loadMoreContainer = document.getElementById('load-more-container');
+        if (endIndex < this.filteredJobs.length) {
+            loadMoreContainer?.classList.remove('hidden');
+        } else {
+            loadMoreContainer?.classList.add('hidden');
+        }
+
+        // Update jobs section visibility
+        const searchSection = document.getElementById('search-section');
+        if (this.filteredJobs.length > 0) {
+            searchSection?.classList.remove('hidden');
+            searchSection?.classList.add('active');
+        } else {
+            container.innerHTML = `
+                <div class="no-results">
+                    <i class="fas fa-search"></i>
+                    <h3>لا توجد نتائج</h3>
+                    <p>جرب تغيير معايير البحث أو الفلترة</p>
+                </div>
+            `;
+        }
+    }
+
+    createJobCard(job) {
+        const card = document.createElement('div');
+        card.className = 'job-card';
+        card.innerHTML = `
+            <div class="job-header">
+                <div>
+                    <h3 class="job-title">${job.title}</h3>
+                    <p class="company-name">${job.company}</p>
+                </div>
+                <div class="job-date">
+                    <small>${this.formatDate(job.datePosted)}</small>
+                </div>
             </div>
-            <button class="btn btn-outline" onclick="toggleFavorite('${job.id}')">
-                <i class="far fa-heart"></i> حفظ
-            </button>
-        </div>
-        
-        <div class="job-meta">
-            <span class="meta-item">
-                <i class="fas fa-tag"></i> ${categoryText}
-            </span>
-            <span class="meta-item">
-                <i class="fas fa-clock"></i> ${typeText}
-            </span>
-            <span class="meta-item">
-                <i class="fas fa-briefcase"></i> ${experienceText}
-            </span>
-            <span class="meta-item">
-                <i class="fas fa-map-marker-alt"></i> ${locationText}
-            </span>
-            ${job.salary ? `<span class="meta-item"><i class="fas fa-money-bill"></i> ${job.salary}</span>` : ''}
-        </div>
-        
-        <div class="job-description">
-            <p>${job.description}</p>
-        </div>
-        
-        <div class="job-actions">
-            <button class="btn btn-primary" onclick="applyToJob('${job.id}')">
-                <i class="fas fa-paper-plane"></i> تقديم طلب
-            </button>
-            <button class="btn btn-secondary" onclick="viewJobDetails('${job.id}')">
-                <i class="fas fa-eye"></i> عرض التفاصيل
-            </button>
-            <button class="btn btn-outline" onclick="shareJob('${job.id}')">
-                <i class="fas fa-share"></i> مشاركة
-            </button>
-        </div>
-    `;
-    
-    return card;
-}
-
-function searchJobs() {
-    const searchTerm = document.getElementById('search-input').value.toLowerCase();
-    const categoryFilter = document.getElementById('category-filter').value;
-    const experienceFilter = document.getElementById('experience-filter').value;
-    const locationFilter = document.getElementById('location-filter').value;
-    
-    filteredJobs = jobsData.filter(job => {
-        const matchesSearch = !searchTerm || 
-            job.title.toLowerCase().includes(searchTerm) ||
-            job.company.toLowerCase().includes(searchTerm) ||
-            job.description.toLowerCase().includes(searchTerm);
-        
-        const matchesCategory = !categoryFilter || job.category === categoryFilter;
-        const matchesExperience = !experienceFilter || job.experience === experienceFilter;
-        const matchesLocation = !locationFilter || job.location === locationFilter;
-        
-        return matchesSearch && matchesCategory && matchesExperience && matchesLocation;
-    });
-    
-    currentPage = 1;
-    displayJobs();
-}
-
-function filterJobs() {
-    searchJobs();
-}
-
-function loadMoreJobs() {
-    currentPage++;
-    displayJobs();
-}
-
-async function handleJobSubmission(e) {
-    e.preventDefault();
-    
-    if (!currentUser) {
-        showToast('يجب تسجيل الدخول أولاً', 'error');
-        showLogin();
-        return;
-    }
-    
-    const jobData = {
-        title: document.getElementById('job-title').value,
-        company: document.getElementById('company-name').value,
-        category: document.getElementById('job-category').value,
-        type: document.getElementById('job-type').value,
-        experience: document.getElementById('experience-level').value,
-        location: document.getElementById('job-location').value,
-        salary: document.getElementById('salary-range').value,
-        description: document.getElementById('job-description').value,
-        requirements: document.getElementById('requirements').value,
-        contactEmail: document.getElementById('contact-email').value,
-        postedBy: currentUser.uid,
-        postedByName: currentUser.displayName || currentUser.email,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    };
-    
-    try {
-        showLoading();
-        await db.collection('jobs').add(jobData);
-        showToast('تم نشر الوظيفة بنجاح!', 'success');
-        resetForm();
-        await loadJobs();
-        showPage('jobs');
-    } catch (error) {
-        showToast('خطأ في نشر الوظيفة', 'error');
-        console.error(error);
-    } finally {
-        hideLoading();
-    }
-}
-
-function resetForm() {
-    document.getElementById('job-form').reset();
-}
-
-// Job Actions
-function toggleFavorite(jobId) {
-    if (!currentUser) {
-        showToast('يجب تسجيل الدخول أولاً', 'error');
-        return;
-    }
-    
-    // Implement favorite functionality
-    showToast('تم حفظ الوظيفة في المفضلة', 'success');
-}
-
-function applyToJob(jobId) {
-    if (!currentUser) {
-        showToast('يجب تسجيل الدخول أولاً', 'error');
-        showLogin();
-        return;
-    }
-    
-    // Implement job application
-    showToast('تم إرسال طلب التوظيف', 'success');
-}
-
-function viewJobDetails(jobId) {
-    const job = jobsData.find(j => j.id === jobId);
-    if (job) {
-        showJobDetailsModal(job);
-    }
-}
-
-function showJobDetailsModal(job) {
-    // Implement job details modal
-    showToast('عرض تفاصيل الوظيفة', 'info');
-}
-
-function shareJob(jobId) {
-    const job = jobsData.find(j => j.id === jobId);
-    if (job && navigator.share) {
-        navigator.share({
-            title: job.title,
-            text: job.description,
-            url: window.location.href
-        });
-    } else {
-        // Fallback for browsers that don't support Web Share API
-        const url = window.location.href;
-        navigator.clipboard.writeText(url).then(() => {
-            showToast('تم نسخ الرابط', 'success');
-        });
-    }
-}
-
-// Profile Functions
-async function loadUserProfile(userId) {
-    try {
-        const doc = await db.collection('users').doc(userId).get();
-        if (doc.exists) {
-            const userData = doc.data();
-            updateProfileUI(userData);
-        }
-    } catch (error) {
-        console.error('خطأ في تحميل الملف الشخصي:', error);
-    }
-}
-
-function updateProfileUI(userData) {
-    // Update profile header
-    document.getElementById('profile-name').textContent = userData.name || 'غير محدد';
-    document.getElementById('profile-email').textContent = userData.email || 'غير محدد';
-    
-    // Update profile form fields
-    if (userData.profile) {
-        document.getElementById('full-name').value = userData.profile.phone || '';
-        document.getElementById('phone').value = userData.profile.phone || '';
-        document.getElementById('location').value = userData.profile.location || '';
-        document.getElementById('linkedin').value = userData.profile.linkedin || '';
-        document.getElementById('portfolio').value = userData.profile.portfolio || '';
-        document.getElementById('skills').value = userData.profile.skills || '';
-        document.getElementById('experience').value = userData.profile.experience || '';
-        document.getElementById('education').value = userData.profile.education || '';
-    }
-}
-
-async function handleProfileUpdate(e) {
-    e.preventDefault();
-    
-    if (!currentUser) {
-        showToast('يجب تسجيل الدخول أولاً', 'error');
-        return;
-    }
-    
-    const profileData = {
-        fullName: document.getElementById('full-name').value,
-        phone: document.getElementById('phone').value,
-        location: document.getElementById('location').value,
-        linkedin: document.getElementById('linkedin').value,
-        portfolio: document.getElementById('portfolio').value
-    };
-    
-    try {
-        showLoading();
-        await db.collection('users').doc(currentUser.uid).update({
-            'profile.phone': profileData.phone,
-            'profile.location': profileData.location,
-            'profile.linkedin': profileData.linkedin,
-            'profile.portfolio': profileData.portfolio,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        showToast('تم تحديث الملف الشخصي', 'success');
-    } catch (error) {
-        showToast('خطأ في تحديث الملف الشخصي', 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-async function handleSkillsUpdate(e) {
-    e.preventDefault();
-    
-    if (!currentUser) {
-        showToast('يجب تسجيل الدخول أولاً', 'error');
-        return;
-    }
-    
-    try {
-        showLoading();
-        await db.collection('users').doc(currentUser.uid).update({
-            'profile.skills': document.getElementById('skills').value,
-            'profile.experience': document.getElementById('experience').value,
-            'profile.education': document.getElementById('education').value,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        showToast('تم تحديث المهارات والخبرات', 'success');
-    } catch (error) {
-        showToast('خطأ في تحديث المهارات', 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-// UI Functions
-function updateUIForAuthState(user) {
-    const loginLink = document.getElementById('login-link');
-    const postJobLink = document.getElementById('post-job-link');
-    const profileLink = document.getElementById('profile-link');
-    
-    if (user) {
-        loginLink.style.display = 'none';
-        postJobLink.style.display = 'block';
-        profileLink.style.display = 'block';
-        
-        // Add logout option to profile link
-        profileLink.innerHTML = `
-            <i class="fas fa-user"></i> الملف الشخصي
-            <span style="margin-right: 10px; cursor: pointer;" onclick="signOut()">(خروج)</span>
+            
+            <div class="job-meta">
+                <div class="meta-item">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>${job.location}</span>
+                </div>
+                <div class="meta-item">
+                    <i class="fas fa-briefcase"></i>
+                    <span>${this.getExperienceLabel(job.experience)}</span>
+                </div>
+                ${job.salary ? `
+                <div class="meta-item">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>${job.salary} ريال</span>
+                </div>
+                ` : ''}
+            </div>
+            
+            <div class="job-description">
+                ${this.truncateText(job.description, 200)}
+            </div>
+            
+            <div class="job-tags">
+                ${this.getCategoryTag(job.category)}
+            </div>
+            
+            <div class="job-actions">
+                <button class="btn btn-primary btn-view" data-job-id="${job.id}">
+                    <i class="fas fa-eye"></i>
+                    عرض التفاصيل
+                </button>
+                <button class="btn btn-outline btn-save" data-job-id="${job.id}">
+                    <i class="fas fa-heart"></i>
+                    حفظ
+                </button>
+            </div>
         `;
-    } else {
-        loginLink.style.display = 'block';
-        postJobLink.style.display = 'none';
-        profileLink.style.display = 'none';
-        profileLink.innerHTML = '<i class="fas fa-user"></i> الملف الشخصي';
+
+        // Add click listeners
+        card.querySelector('.btn-view').addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.showJobDetails(job);
+        });
+
+        card.querySelector('.btn-save').addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.saveJob(job.id);
+        });
+
+        card.addEventListener('click', () => {
+            this.showJobDetails(job);
+        });
+
+        return card;
     }
-}
 
-function showPage(pageName) {
-    // Hide all pages
-    document.querySelectorAll('.page').forEach(page => {
-        page.classList.remove('active');
-    });
-    
-    // Show target page
-    const targetPage = document.getElementById(pageName + '-page');
-    if (targetPage) {
-        targetPage.classList.add('active');
+    showJobDetails(job) {
+        const modal = document.getElementById('job-modal');
+        const title = document.getElementById('modal-job-title');
+        const company = document.getElementById('modal-company');
+        const location = document.getElementById('modal-location');
+        const date = document.getElementById('modal-date');
+        const description = document.getElementById('modal-description');
+        const requirements = document.getElementById('modal-requirements');
+        const benefits = document.getElementById('modal-benefits');
+
+        if (title) title.textContent = job.title;
+        if (company) company.textContent = job.company;
+        if (location) location.textContent = job.location;
+        if (date) date.textContent = this.formatDate(job.datePosted);
+        if (description) description.textContent = job.description;
+        if (requirements) requirements.textContent = job.requirements || 'غير محدد';
+        if (benefits) benefits.textContent = job.benefits || 'غير محدد';
+
+        modal?.classList.remove('hidden');
+        modal?.classList.add('show');
+
+        // Update apply and save buttons
+        const applyBtn = document.getElementById('apply-btn');
+        const saveBtn = document.getElementById('save-btn');
+        
+        applyBtn?.addEventListener('click', () => {
+            this.applyToJob(job);
+        });
+
+        saveBtn?.addEventListener('click', () => {
+            this.saveJob(job.id);
+        });
     }
-    
-    // Load jobs if on jobs page
-    if (pageName === 'jobs') {
-        displayJobs();
-    }
-}
 
-function showLogin() {
-    loginModal.style.display = 'block';
-}
+    async handleJobSubmission(e) {
+        e.preventDefault();
+        
+        if (!this.currentUser) {
+            this.showToast('يجب تسجيل الدخول لنشر وظيفة', 'warning');
+            this.showAuthModal('login');
+            return;
+        }
 
-function closeLogin() {
-    loginModal.style.display = 'none';
-    // Reset forms
-    document.getElementById('login-form').reset();
-    document.getElementById('register-form').reset();
-}
-
-function switchAuthTab(tab) {
-    const loginForm = document.getElementById('login-form');
-    const registerForm = document.getElementById('register-form');
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    
-    tabBtns.forEach(btn => btn.classList.remove('active'));
-    
-    if (tab === 'login') {
-        loginForm.style.display = 'block';
-        registerForm.style.display = 'none';
-        tabBtns[0].classList.add('active');
-    } else {
-        loginForm.style.display = 'none';
-        registerForm.style.display = 'block';
-        tabBtns[1].classList.add('active');
-    }
-}
-
-function showLoading() {
-    loadingScreen.style.display = 'flex';
-}
-
-function hideLoading() {
-    loadingScreen.style.display = 'none';
-}
-
-function showToast(message, type = 'info') {
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <i class="fas fa-${getToastIcon(type)}"></i>
-            <span>${message}</span>
-        </div>
-    `;
-    
-    const container = document.getElementById('toast-container');
-    container.appendChild(toast);
-    
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-        toast.remove();
-    }, 5000);
-}
-
-function getToastIcon(type) {
-    const icons = {
-        success: 'check-circle',
-        error: 'exclamation-circle',
-        warning: 'exclamation-triangle',
-        info: 'info-circle'
-    };
-    return icons[type] || 'info-circle';
-}
-
-function getErrorMessage(errorCode) {
-    const errorMessages = {
-        'auth/user-not-found': 'لم يتم العثور على المستخدم',
-        'auth/wrong-password': 'كلمة مرور خاطئة',
-        'auth/email-already-in-use': 'البريد الإلكتروني مستخدم بالفعل',
-        'auth/weak-password': 'كلمة مرور ضعيفة جداً',
-        'auth/invalid-email': 'بريد إلكتروني غير صحيح',
-        'auth/operation-not-allowed': 'هذه العملية غير مسموحة',
-        'auth/invalid-credential': 'بيانات اعتماد غير صحيحة'
-    };
-    return errorMessages[errorCode] || 'حدث خطأ غير متوقع';
-}
-
-function getCategoryText(category) {
-    const categories = {
-        'technology': 'التكنولوجيا',
-        'marketing': 'التسويق',
-        'sales': 'المبيعات',
-        'finance': 'المالية',
-        'hr': 'الموارد البشرية',
-        'education': 'التعليم',
-        'health': 'الصحة',
-        'engineering': 'الهندسة'
-    };
-    return categories[category] || category;
-}
-
-function getJobTypeText(type) {
-    const types = {
-        'full-time': 'دوام كامل',
-        'part-time': 'دوام جزئي',
-        'contract': 'عقد',
-        'internship': 'تدريب'
-    };
-    return types[type] || type;
-}
-
-function getExperienceText(experience) {
-    const experiences = {
-        'entry': 'مبتدئ (0-2 سنة)',
-        'mid': 'متوسط (2-5 سنوات)',
-        'senior': 'خبير (5+ سنوات)'
-    };
-    return experiences[experience] || experience;
-}
-
-function getLocationText(location) {
-    const locations = {
-        'riyadh': 'الرياض',
-        'jeddah': 'جدة',
-        'dammam': 'الدمام',
-        'makkah': 'مكة المكرمة',
-        'madinah': 'المدينة المنورة',
-        'remote': 'عن بُعد'
-    };
-    return locations[location] || location;
-}
-
-// Utility Functions
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
+        const formData = new FormData(e.target);
+        const jobData = {
+            title: document.getElementById('job-title').value,
+            company: document.getElementById('company-name').value,
+            category: document.getElementById('job-category').value,
+            experience: document.getElementById('experience-level').value,
+            location: document.getElementById('job-location').value,
+            salary: document.getElementById('salary-range').value,
+            description: document.getElementById('job-description').value,
+            requirements: document.getElementById('requirements').value,
+            benefits: document.getElementById('benefits').value,
+            contactEmail: document.getElementById('contact-email').value
         };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
 
-
-
-let deferredPrompt;
-const installBtn = document.getElementById('installBtn');
-
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    installBtn.hidden = false;
-});
-
-installBtn.addEventListener('click', async () => {
-    if (!deferredPrompt) return;
-
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-
-    if (outcome === 'accepted') {
-        showToast('تم تثبيت التطبيق 🎉', 'success');
+        try {
+            await this.saveJob(jobData);
+            this.showToast('تم نشر الوظيفة بنجاح!', 'success');
+            this.clearJobForm();
+            this.navigateTo('search');
+            await this.loadJobs();
+        } catch (error) {
+            console.error('Error submitting job:', error);
+            this.showToast('خطأ في نشر الوظيفة', 'error');
+        }
     }
 
-    deferredPrompt = null;
-    installBtn.hidden = true;
+    clearJobForm() {
+        document.getElementById('job-form').reset();
+    }
+
+    performSearch() {
+        const searchTerm = document.getElementById('job-search').value.toLowerCase();
+        const locationTerm = document.getElementById('location-search').value.toLowerCase();
+
+        this.filteredJobs = this.jobs.filter(job => {
+            const matchesSearch = !searchTerm || 
+                job.title.toLowerCase().includes(searchTerm) ||
+                job.company.toLowerCase().includes(searchTerm) ||
+                job.description.toLowerCase().includes(searchTerm);
+            
+            const matchesLocation = !locationTerm ||
+                job.location.toLowerCase().includes(locationTerm);
+
+            return matchesSearch && matchesLocation;
+        });
+
+        this.currentPage = 0;
+        this.displayJobs();
+        this.navigateTo('search');
+    }
+
+    applyFilters() {
+        const category = document.getElementById('category-filter').value;
+        const experience = document.getElementById('experience-filter').value;
+        const salary = document.getElementById('salary-filter').value;
+
+        this.filteredJobs = this.jobs.filter(job => {
+            const matchesCategory = !category || job.category === category;
+            const matchesExperience = !experience || job.experience === experience;
+            
+            let matchesSalary = true;
+            if (salary) {
+                const jobSalary = this.parseSalary(job.salary);
+                const filterSalary = this.parseSalary(salary);
+                matchesSalary = jobSalary >= filterSalary.min && jobSalary.max <= filterSalary.max;
+            }
+
+            return matchesCategory && matchesExperience && matchesSalary;
+        });
+
+        this.currentPage = 0;
+        this.displayJobs();
+    }
+
+    loadMoreJobs() {
+        this.currentPage++;
+        this.displayJobs();
+    }
+
+    // Authentication Methods
+    async handleLogin(e) {
+        e.preventDefault();
+        
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+
+        try {
+            const { signInWithEmailAndPassword } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+            await signInWithEmailAndPassword(this.auth, email, password);
+            this.showToast('تم تسجيل الدخول بنجاح!', 'success');
+            this.closeModal();
+        } catch (error) {
+            console.error('Login error:', error);
+            this.showToast('خطأ في تسجيل الدخول', 'error');
+        }
+    }
+
+    async handleRegister(e) {
+        e.preventDefault();
+        
+        const name = document.getElementById('register-name').value;
+        const email = document.getElementById('register-email').value;
+        const password = document.getElementById('register-password').value;
+        const confirmPassword = document.getElementById('confirm-password').value;
+
+        if (password !== confirmPassword) {
+            this.showToast('كلمات المرور غير متطابقة', 'warning');
+            return;
+        }
+
+        try {
+            const { createUserWithEmailAndPassword, updateProfile } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+            const { createUser } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+            
+            const userCredential = await createUserWithEmailAndPassword(this.auth, email, password);
+            await updateProfile(userCredential.user, { displayName: name });
+            
+            // Save user profile to database
+            const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            const userRef = ref(this.database, `users/${userCredential.user.uid}`);
+            await set(userRef, {
+                name: name,
+                email: email,
+                joinedAt: new Date().toISOString()
+            });
+
+            this.showToast('تم إنشاء الحساب بنجاح!', 'success');
+            this.closeModal();
+        } catch (error) {
+            console.error('Registration error:', error);
+            this.showToast('خطأ في إنشاء الحساب', 'error');
+        }
+    }
+
+    async logout() {
+        try {
+            await this.auth.signOut();
+            this.showToast('تم تسجيل الخروج', 'success');
+        } catch (error) {
+            console.error('Logout error:', error);
+            this.showToast('خطأ في تسجيل الخروج', 'error');
+        }
+    }
+
+    handleAuthStateChange(user) {
+        this.currentUser = user;
+        
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const userMenu = document.getElementById('user-menu');
+        const userName = document.getElementById('user-name');
+        const userAvatar = document.getElementById('user-avatar');
+
+        if (user) {
+            // User is signed in
+            loginBtn?.classList.add('hidden');
+            logoutBtn?.classList.remove('hidden');
+            userMenu?.classList.remove('hidden');
+            
+            if (userName) userName.textContent = user.displayName || user.email;
+            if (userAvatar) {
+                userAvatar.src = user.photoURL || 'https://via.placeholder.com/32x32?text=U';
+                userAvatar.alt = user.displayName || 'User';
+            }
+
+            this.updateProfileSection();
+        } else {
+            // User is signed out
+            loginBtn?.classList.remove('hidden');
+            logoutBtn?.classList.add('hidden');
+            userMenu?.classList.add('hidden');
+        }
+    }
+
+    async updateProfileSection() {
+        if (!this.currentUser) return;
+
+        const profileName = document.getElementById('profile-name');
+        const profileEmail = document.getElementById('profile-email');
+        const profileJoined = document.getElementById('profile-joined');
+        const profileAvatar = document.getElementById('profile-avatar');
+
+        if (profileName) profileName.textContent = this.currentUser.displayName || 'غير محدد';
+        if (profileEmail) profileEmail.textContent = this.currentUser.email || 'غير محدد';
+        if (profileJoined) {
+            const joinedDate = new Date(this.currentUser.metadata.creationTime);
+            profileJoined.textContent = `انضم في: ${joinedDate.toLocaleDateString('ar-SA')}`;
+        }
+        if (profileAvatar) {
+            profileAvatar.src = this.currentUser.photoURL || 'https://via.placeholder.com/80x80?text=U';
+            profileAvatar.alt = this.currentUser.displayName || 'User';
+        }
+
+        // Update user stats
+        await this.updateUserStats();
+    }
+
+    async updateUserStats() {
+        if (!this.currentUser) return;
+
+        try {
+            const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            const userJobsRef = ref(this.database, 'jobs');
+            const snapshot = await get(userJobsRef);
+            
+            if (snapshot.exists()) {
+                const allJobs = Object.values(snapshot.val());
+                const userJobs = allJobs.filter(job => job.postedBy === this.currentUser.uid);
+                
+                document.getElementById('posted-jobs-count').textContent = userJobs.length;
+                document.getElementById('applications-count').textContent = '0'; // TODO: Implement applications tracking
+                document.getElementById('favorites-count').textContent = '0'; // TODO: Implement favorites
+            }
+        } catch (error) {
+            console.error('Error updating user stats:', error);
+        }
+    }
+
+    // PWA Install Methods
+    showInstallBanner() {
+        const banner = document.getElementById('install-banner');
+        banner?.classList.remove('hidden');
+        banner?.classList.add('show');
+    }
+
+    hideInstallBanner() {
+        const banner = document.getElementById('install-banner');
+        banner?.classList.remove('show');
+        setTimeout(() => {
+            banner?.classList.add('hidden');
+        }, 300);
+    }
+
+    async installApp() {
+        if (!this.deferredPrompt) return;
+
+        this.deferredPrompt.prompt();
+        const { outcome } = await this.deferredPrompt.userChoice;
+        
+        if (outcome === 'accepted') {
+            console.log('User accepted the install prompt');
+        } else {
+            console.log('User dismissed the install prompt');
+        }
+
+        this.deferredPrompt = null;
+        this.hideInstallBanner();
+    }
+
+    checkInstallEligibility() {
+        // Don't show install banner if app is already installed
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            return;
+        }
+
+        // Show banner after 30 seconds if user hasn't dismissed it
+        setTimeout(() => {
+            const dismissed = localStorage.getItem('install-banner-dismissed');
+            if (!dismissed && this.deferredPrompt) {
+                this.showInstallBanner();
+            }
+        }, 30000);
+    }
+
+    // Navigation Methods
+    navigateTo(section) {
+        // Hide all sections
+        document.querySelectorAll('.main section').forEach(sec => {
+            sec.classList.remove('active');
+        });
+
+        // Show target section
+        const targetSection = document.getElementById(section);
+        if (targetSection) {
+            targetSection.classList.add('active');
+            targetSection.classList.remove('hidden');
+        }
+
+        // Update navigation
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === `#${section}`) {
+                link.classList.add('active');
+            }
+        });
+
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    toggleMobileMenu() {
+        const navMenu = document.getElementById('nav-menu');
+        const navToggle = document.getElementById('nav-toggle');
+        
+        navMenu?.classList.toggle('active');
+        navToggle?.classList.toggle('active');
+    }
+
+    // UI Helper Methods
+    showLoading() {
+        const loadingScreen = document.getElementById('loading-screen');
+        loadingScreen?.classList.remove('hidden');
+    }
+
+    hideLoading() {
+        const loadingScreen = document.getElementById('loading-screen');
+        loadingScreen?.classList.add('hidden');
+    }
+
+    showToast(message, type = 'info') {
+        const toastContainer = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `
+            <div class="toast-content">
+                <i class="fas fa-${this.getToastIcon(type)}"></i>
+                <span>${message}</span>
+            </div>
+        `;
+
+        toastContainer?.appendChild(toast);
+
+        // Show toast
+        setTimeout(() => toast.classList.add('show'), 100);
+
+        // Hide toast after 5 seconds
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 5000);
+    }
+
+    getToastIcon(type) {
+        const icons = {
+            success: 'check-circle',
+            error: 'exclamation-circle',
+            warning: 'exclamation-triangle',
+            info: 'info-circle'
+        };
+        return icons[type] || 'info-circle';
+    }
+
+    showAuthModal(type = 'login') {
+        const modal = document.getElementById('auth-modal');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const modalTitle = document.getElementById('auth-modal-title');
+        const switchToLogin = document.getElementById('switch-to-login');
+        const switchToRegister = document.getElementById('switch-to-register');
+
+        modal?.classList.remove('hidden');
+        modal?.classList.add('show');
+
+        if (type === 'login') {
+            loginForm?.classList.remove('hidden');
+            registerForm?.classList.add('hidden');
+            modalTitle.textContent = 'تسجيل الدخول';
+            switchToLogin?.classList.add('hidden');
+            switchToRegister?.classList.remove('hidden');
+        } else {
+            loginForm?.classList.add('hidden');
+            registerForm?.classList.remove('hidden');
+            modalTitle.textContent = 'إنشاء حساب';
+            switchToLogin?.classList.remove('hidden');
+            switchToRegister?.classList.add('hidden');
+        }
+    }
+
+    closeModal() {
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        });
+    }
+
+    // Utility Methods
+    formatDate(dateString) {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffTime = Math.abs(now - date);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 1) return 'أمس';
+        if (diffDays < 7) return `منذ ${diffDays} أيام`;
+        if (diffDays < 30) return `منذ ${Math.ceil(diffDays / 7)} أسابيع`;
+        return date.toLocaleDateString('ar-SA');
+    }
+
+    truncateText(text, maxLength) {
+        if (text.length <= maxLength) return text;
+        return text.substr(0, maxLength) + '...';
+    }
+
+    getExperienceLabel(experience) {
+        const labels = {
+            junior: 'مبتدئ',
+            mid: 'متوسط',
+            senior: 'خبير',
+            lead: 'كبير'
+        };
+        return labels[experience] || experience;
+    }
+
+    getCategoryTag(category) {
+        const categories = {
+            it: 'تقنية المعلومات',
+            marketing: 'التسويق',
+            sales: 'المبيعات',
+            hr: 'الموارد البشرية',
+            finance: 'المالية',
+            engineering: 'الهندسة',
+            design: 'التصميم',
+            education: 'التعليم'
+        };
+        
+        const label = categories[category] || category;
+        return `<span class="tag">${label}</span>`;
+    }
+
+    parseSalary(salaryRange) {
+        if (!salaryRange) return { min: 0, max: Infinity };
+        
+        const ranges = {
+            '0-3000': { min: 0, max: 3000 },
+            '3000-5000': { min: 3000, max: 5000 },
+            '5000-8000': { min: 5000, max: 8000 },
+            '8000-12000': { min: 8000, max: 12000 },
+            '12000+': { min: 12000, max: Infinity }
+        };
+        
+        return ranges[salaryRange] || { min: 0, max: Infinity };
+    }
+
+    updateJobStats() {
+        const totalJobs = this.jobs.length;
+        const uniqueCompanies = new Set(this.jobs.map(job => job.company)).size;
+        const totalUsers = 1; // TODO: Get actual user count
+
+        document.getElementById('total-jobs').textContent = totalJobs;
+        document.getElementById('total-companies').textContent = uniqueCompanies;
+        document.getElementById('total-users').textContent = totalUsers;
+    }
+
+    saveJob(jobId) {
+        // TODO: Implement job saving functionality
+        this.showToast('تم حفظ الوظيفة', 'success');
+    }
+
+    applyToJob(job) {
+        // TODO: Implement job application functionality
+        this.showToast('تم إرسال طلب التوظيف', 'success');
+        this.closeModal();
+    }
+}
+
+// Initialize app when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    new JobApp();
 });
 
-// Export functions for global access
-window.showPage = showPage;
-window.showLogin = showLogin;
-window.closeLogin = closeLogin;
-window.switchAuthTab = switchAuthTab;
-window.signInWithGoogle = signInWithGoogle;
-window.signOut = signOut;
-window.searchJobs = searchJobs;
-window.filterJobs = filterJobs;
-window.loadMoreJobs = loadMoreJobs;
-window.resetForm = resetForm;
-window.toggleFavorite = toggleFavorite;
-window.applyToJob = applyToJob;
-window.viewJobDetails = viewJobDetails;
-window.shareJob = shareJob;
+// Handle service worker messages
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'SKIP_WAITING') {
+            window.location.reload();
+        }
+    });
+}
